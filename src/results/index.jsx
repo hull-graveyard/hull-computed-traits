@@ -8,7 +8,9 @@ import Logs from './logs';
 import Traits from './traits';
 
 const Panes = [
-  { key: 'User', Pane: Changes, title: 'User' },
+  { key: 'User', Pane: Changes, title: 'User', getData: (props) => {
+    return _.isEmpty(props.errors) ? props.user : {};
+  }},
   { key: 'Traits', Pane: Traits, title: 'Output' },
   { key: 'Errors', Pane: Errors, title: 'Errors' },
   { key: 'Logs', Pane: Logs, title: 'Logs' },
@@ -23,8 +25,13 @@ export default class Results extends Component {
 
   getActiveTabs() {
     return Panes.reduce( (res, pane) => {
-      const { Pane, key, title } = pane;
-      const data = this.props[key.toLowerCase()];
+      const { Pane, key, title, getData } = pane;
+      let data;
+      if (pane.getData) {
+        data = pane.getData.call(this, this.props);
+      } else {
+        data = this.props[key.toLowerCase()];
+      }
       if (Pane && !_.isEmpty(data)) {
         res.defaultKey = res.defaultKey || key;
         res.activeKeys[key] = true;
