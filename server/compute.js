@@ -5,6 +5,8 @@ import urijs from 'urijs';
 import { inspect } from 'util';
 import raven from 'raven';
 
+import { getUserPayload } from '../common/utils';
+
 function getUtils() {
   const lodash = _.functions(_).reduce(function(l, key) {
     l[key] = function() {
@@ -27,14 +29,12 @@ function isInSegment(segments, segmentName) {
 module.exports = function compute({ user, segments }, ship = {}, sourceCode) {
 
   const sandbox = Object.assign({
-    user,
-    segments,
     ship,
     output: {},
     traits: {},
     errors: [],
     logs: []
-  }, getUtils());
+  }, getUtils(), getUserPayload(user, segments));
 
   sandbox.isInSegment = isInSegment.bind(null, segments);
 
@@ -49,8 +49,6 @@ module.exports = function compute({ user, segments }, ship = {}, sourceCode) {
   sandbox.console = { log, warn: log, error: logError };
 
   const private_settings = ship.private_settings || {};
-
-
   const code = sourceCode || private_settings.code || 'return {};';
   const sentryDsn = private_settings.sentry_dsn;
 
@@ -84,7 +82,6 @@ module.exports = function compute({ user, segments }, ship = {}, sourceCode) {
     sandbox.errors.push(err.toString());
     sandbox.captureException(err);
   }
-
 
   sandbox.changes = _.reduce(sandbox.traits, (t,v,k) => {
     const key = k.toLowerCase();
